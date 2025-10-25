@@ -34,18 +34,37 @@ The development server runs at http://localhost:3000
 - **Icon Library**: lucide-react
 - **Utilities**: class-variance-authority, clsx, tailwind-merge
 - **Animations**: tw-animate-css
+- **Authentication**: better-auth v1.3.31
+- **Database**: MySQL (via mysql2 driver)
 
 ## Project Structure
 
 ```
-app/               # Next.js App Router directory
-  layout.tsx       # Root layout with Geist fonts
-  page.tsx         # Home page
-  globals.css      # Global Tailwind + shadcn styles
-lib/               # Utility functions
-  utils.ts         # cn() utility for className merging
-components/        # React components (to be created)
-  ui/              # shadcn/ui components (added via CLI)
+app/                      # Next.js App Router directory
+  layout.tsx              # Root layout with Geist fonts
+  page.tsx                # Home page
+  globals.css             # Global Tailwind + shadcn styles
+  api/
+    auth/[...all]/        # Better Auth API routes
+      route.ts            # Authentication endpoints
+  login/
+    page.tsx              # Login page
+  signup/
+    page.tsx              # Signup page
+  dashboard/
+    page.tsx              # Protected dashboard page
+lib/                      # Utility functions
+  utils.ts                # cn() utility for className merging
+  auth.ts                 # Better Auth server configuration
+  auth-client.ts          # Better Auth React client
+components/               # React components
+  auth/                   # Authentication components
+    login-form.tsx        # Login form component
+    signup-form.tsx       # Signup form component
+  ui/                     # shadcn/ui components (added via CLI)
+schema.sql                # MySQL database schema
+.env.local                # Local environment variables (git-ignored)
+.env.example              # Environment variables template
 ```
 
 ## Path Aliases
@@ -119,6 +138,71 @@ The project uses Google Fonts via `next/font`:
 - **Monospace**: Geist Mono
 
 Both are configured as CSS variables in the root layout.
+
+## Authentication
+
+This project uses **better-auth** for authentication with MySQL as the database backend.
+
+### Database Setup (Required for Development)
+
+A local MySQL server is required for development. The application will not work without it.
+
+1. **Install MySQL** (if not already installed):
+   - **macOS**: `brew install mysql && brew services start mysql`
+   - **Linux**: `sudo apt install mysql-server` or `sudo systemctl start mysql`
+   - **Windows**: Download from [MySQL website](https://dev.mysql.com/downloads/)
+
+2. **Configure environment variables** in `.env.local`:
+   ```env
+   DATABASE_HOST=localhost
+   DATABASE_USER=root
+   DATABASE_PASSWORD=your_password
+   DATABASE_NAME=blindtest
+   BETTER_AUTH_SECRET=generate-a-secure-random-string
+   BETTER_AUTH_URL=http://localhost:3000
+   NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+   ```
+
+3. **Create the database and tables**:
+   ```bash
+   mysql -u root -p -e "CREATE DATABASE blindtest;"
+   mysql -u root -p blindtest < schema.sql
+   ```
+
+### Authentication Configuration
+
+- **Server Config**: `lib/auth.ts` - Better Auth instance with MySQL adapter
+- **Client Config**: `lib/auth-client.ts` - React client with hooks
+- **API Routes**: `/api/auth/*` - All authentication endpoints
+- **Protected Routes**: Use `useSession()` hook to check authentication status
+
+### Available Auth Hooks
+
+```typescript
+import { useSession, authClient } from "@/lib/auth-client";
+
+// Check session
+const { data: session, isPending } = useSession();
+
+// Sign up
+await authClient.signUp.email({ email, password, name });
+
+// Sign in
+await authClient.signIn.email({ email, password });
+
+// Sign out
+await authClient.signOut();
+```
+
+### Database Schema
+
+The following tables are created by `schema.sql`:
+- **user**: User accounts (id, name, email, emailVerified, image, timestamps)
+- **session**: User sessions (id, userId, expiresAt, token, ipAddress, userAgent)
+- **account**: OAuth accounts and password storage (id, accountId, providerId, userId, accessToken, refreshToken, password)
+- **verification**: Email verification tokens (id, identifier, value, expiresAt)
+
+For complete setup instructions, see `AUTH_SETUP.md`.
 
 ## MCP Servers
 

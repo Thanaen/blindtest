@@ -1,7 +1,4 @@
 {
-  "enabledMcpjsonServers": [
-    "shadcn",
-    "next-devtools"
-  ],
-  "enableAllProjectMcpServers": true
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["shadcn", "next-devtools"]
 }
