@@ -5,6 +5,7 @@ A modern web application built with Next.js 16, React 19, and authenticated with
 ## Features
 
 - 🔐 **Authentication** - Email/password authentication powered by better-auth
+- 🗃️ **Type-Safe ORM** - Drizzle ORM for database interactions
 - 🎨 **Modern UI** - Built with Tailwind CSS 4 and shadcn/ui components
 - ⚡ **Fast Development** - Powered by Bun runtime
 - 🌙 **Dark Mode** - Built-in dark mode support
@@ -17,6 +18,7 @@ A modern web application built with Next.js 16, React 19, and authenticated with
 - **React**: 19.2.0
 - **Authentication**: [better-auth](https://www.better-auth.com/) v1.3.31
 - **Database**: MySQL (with mysql2 driver)
+- **ORM**: [Drizzle ORM](https://orm.drizzle.team/) with drizzle-kit
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (New York style)
 - **TypeScript**: 5.x with strict mode
@@ -153,8 +155,13 @@ blindtest/
 ├── lib/                     # Utility functions
 │   ├── auth.ts              # Better Auth server config
 │   ├── auth-client.ts       # Better Auth client
-│   └── utils.ts             # Utility functions
-├── schema.sql               # Database schema
+│   ├── utils.ts             # Utility functions
+│   └── db/                  # Database configuration
+│       ├── index.ts         # Drizzle ORM instance
+│       └── schema.ts        # Database schema (Drizzle)
+├── drizzle/                 # Drizzle migrations (auto-generated)
+├── drizzle.config.ts        # Drizzle Kit configuration
+├── schema.sql               # Database schema (initial setup)
 ├── .env.example             # Environment variables template
 ├── .env.local               # Local environment variables (git-ignored)
 └── README.md                # This file
@@ -163,17 +170,17 @@ blindtest/
 ## Available Scripts
 
 ```bash
-# Start development server
-bun run dev
+# Development
+bun run dev              # Start development server
+bun run build            # Build for production
+bun run start            # Start production server
+bun run lint             # Run linter
 
-# Build for production
-bun run build
-
-# Start production server
-bun run start
-
-# Run linter
-bun run lint
+# Database (Drizzle ORM)
+bunx drizzle-kit push    # Push schema changes to database (development)
+bunx drizzle-kit generate # Generate migrations from schema
+bunx drizzle-kit migrate  # Run migrations
+bunx drizzle-kit studio   # Open Drizzle Studio (database GUI)
 ```
 
 ## Authentication
@@ -236,7 +243,98 @@ The application uses the following MySQL tables:
 | `account` | OAuth providers and password hashes |
 | `verification` | Email verification tokens |
 
-For detailed schema information, see `schema.sql`.
+For detailed schema information, see `schema.sql` or `lib/db/schema.ts`.
+
+## Using Drizzle ORM
+
+This project uses Drizzle ORM for type-safe database operations. The ORM is integrated with better-auth for authentication.
+
+### Basic Usage
+
+```typescript
+import { db } from "@/lib/db";
+import { user } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+// Query all users
+const users = await db.select().from(user);
+
+// Query with conditions
+const specificUser = await db
+  .select()
+  .from(user)
+  .where(eq(user.email, "user@example.com"));
+
+// Insert a user (typically handled by better-auth)
+await db.insert(user).values({
+  id: "unique-id",
+  name: "John Doe",
+  email: "john@example.com",
+  emailVerified: false,
+});
+
+// Update user
+await db
+  .update(user)
+  .set({ name: "Jane Doe" })
+  .where(eq(user.id, "user-id"));
+
+// Delete user
+await db.delete(user).where(eq(user.id, "user-id"));
+```
+
+### Type Safety
+
+Drizzle provides full TypeScript type inference:
+
+```typescript
+import type { User, NewUser } from "@/lib/db";
+
+// User type is inferred from select queries
+const user: User = await db.select().from(user).limit(1);
+
+// NewUser type is for insert operations
+const newUser: NewUser = {
+  id: "unique-id",
+  name: "John Doe",
+  email: "john@example.com",
+  emailVerified: false,
+};
+```
+
+### Schema Management
+
+The database schema is defined in `lib/db/schema.ts`. To modify the schema:
+
+1. Edit `lib/db/schema.ts`
+2. Push changes directly (development):
+   ```bash
+   bunx drizzle-kit push
+   ```
+   OR generate a migration (production):
+   ```bash
+   bunx drizzle-kit generate
+   bunx drizzle-kit migrate
+   ```
+
+### Drizzle Studio
+
+View and edit your database visually:
+
+```bash
+bunx drizzle-kit studio
+```
+
+This opens a web interface at `https://local.drizzle.studio` where you can browse tables, run queries, and edit data.
+
+### Available Tables
+
+- **user**: User accounts
+- **session**: Active sessions
+- **account**: OAuth accounts and passwords
+- **verification**: Email verification tokens
+
+All tables are defined in `lib/db/schema.ts` with TypeScript types and relationships.
 
 ## Troubleshooting
 
@@ -348,5 +446,6 @@ For issues and questions:
 
 - [Next.js](https://nextjs.org/) - The React framework
 - [better-auth](https://www.better-auth.com/) - Authentication library
+- [Drizzle ORM](https://orm.drizzle.team/) - TypeScript ORM
 - [shadcn/ui](https://ui.shadcn.com/) - UI component library
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework

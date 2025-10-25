@@ -34,8 +34,9 @@ The development server runs at http://localhost:3000
 - **Icon Library**: lucide-react
 - **Utilities**: class-variance-authority, clsx, tailwind-merge
 - **Animations**: tw-animate-css
-- **Authentication**: better-auth v1.3.31
+- **Authentication**: better-auth v1.3.31 (with Drizzle adapter)
 - **Database**: MySQL (via mysql2 driver)
+- **ORM**: Drizzle ORM with drizzle-kit
 
 ## Project Structure
 
@@ -57,12 +58,17 @@ lib/                      # Utility functions
   utils.ts                # cn() utility for className merging
   auth.ts                 # Better Auth server configuration
   auth-client.ts          # Better Auth React client
+  db/                     # Database configuration
+    index.ts              # Drizzle ORM instance and connection
+    schema.ts             # Database schema (Drizzle ORM)
 components/               # React components
   auth/                   # Authentication components
     login-form.tsx        # Login form component
     signup-form.tsx       # Signup form component
   ui/                     # shadcn/ui components (added via CLI)
-schema.sql                # MySQL database schema
+drizzle/                  # Drizzle migrations (auto-generated)
+drizzle.config.ts         # Drizzle Kit configuration
+schema.sql                # MySQL database schema (initial setup)
 .env.local                # Local environment variables (git-ignored)
 .env.example              # Environment variables template
 ```
@@ -171,7 +177,7 @@ A local MySQL server is required for development. The application will not work 
 
 ### Authentication Configuration
 
-- **Server Config**: `lib/auth.ts` - Better Auth instance with MySQL adapter
+- **Server Config**: `lib/auth.ts` - Better Auth instance with Drizzle adapter
 - **Client Config**: `lib/auth-client.ts` - React client with hooks
 - **API Routes**: `/api/auth/*` - All authentication endpoints
 - **Protected Routes**: Use `useSession()` hook to check authentication status
@@ -203,6 +209,100 @@ The following tables are created by `schema.sql`:
 - **verification**: Email verification tokens (id, identifier, value, expiresAt)
 
 For complete setup instructions, see `AUTH_SETUP.md`.
+
+## Database & ORM (Drizzle)
+
+This project uses **Drizzle ORM** for type-safe database interactions with MySQL.
+
+### Drizzle Configuration
+
+- **Config File**: `drizzle.config.ts` - Drizzle Kit configuration
+- **Schema**: `lib/db/schema.ts` - Database schema definitions
+- **Database Instance**: `lib/db/index.ts` - Drizzle client and connection pool
+- **Migrations**: `drizzle/` directory (auto-generated)
+
+### Using Drizzle ORM
+
+Import the database instance and schema from `@/lib/db`:
+
+```typescript
+import { db } from "@/lib/db";
+import { user, session, account, verification } from "@/lib/db/schema";
+import { eq, and, or } from "drizzle-orm";
+
+// Query users
+const users = await db.select().from(user);
+
+// Query with conditions
+const specificUser = await db
+  .select()
+  .from(user)
+  .where(eq(user.email, "user@example.com"));
+
+// Insert data
+await db.insert(user).values({
+  id: "unique-id",
+  name: "John Doe",
+  email: "john@example.com",
+  emailVerified: false,
+});
+
+// Update data
+await db
+  .update(user)
+  .set({ name: "Jane Doe" })
+  .where(eq(user.id, "user-id"));
+
+// Delete data
+await db.delete(user).where(eq(user.id, "user-id"));
+```
+
+### Type-Safe Queries
+
+Drizzle provides full TypeScript type safety:
+
+```typescript
+import type { User, NewUser } from "@/lib/db";
+
+// User is the inferred type from select queries
+const user: User = await db.select().from(user).limit(1);
+
+// NewUser is the type for insert operations
+const newUser: NewUser = {
+  id: "unique-id",
+  name: "John Doe",
+  email: "john@example.com",
+  emailVerified: false,
+};
+```
+
+### Drizzle Commands
+
+```bash
+# Generate migrations from schema
+bunx drizzle-kit generate
+
+# Push schema changes to database (development)
+bunx drizzle-kit push
+
+# Open Drizzle Studio (database GUI)
+bunx drizzle-kit studio
+
+# Run migrations
+bunx drizzle-kit migrate
+```
+
+### Schema Management
+
+The database schema is defined in `lib/db/schema.ts` using Drizzle's schema builder. When you modify the schema:
+
+1. Update `lib/db/schema.ts` with your changes
+2. Run `bunx drizzle-kit push` to apply changes directly (development), OR
+3. Run `bunx drizzle-kit generate` to create a migration file, then apply it
+
+### Integration with Better Auth
+
+Better Auth uses the Drizzle adapter configured in `lib/auth.ts`. The adapter automatically handles all authentication-related database operations using the defined schema.
 
 ## MCP Servers
 

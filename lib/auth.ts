@@ -1,12 +1,10 @@
 import { betterAuth } from "better-auth";
-import { createPool } from "mysql2/promise";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "@/lib/db";
 
 export const auth = betterAuth({
-  database: createPool({
-    host: process.env.DATABASE_HOST || "localhost",
-    user: process.env.DATABASE_USER || "root",
-    password: process.env.DATABASE_PASSWORD || "",
-    database: process.env.DATABASE_NAME || "blindtest",
+  database: drizzleAdapter(db, {
+    provider: "mysql",
   }),
   emailAndPassword: {
     enabled: true,
