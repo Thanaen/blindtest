@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, boolean, text, timestamp, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, varchar, boolean, text, timestamp, int, index } from "drizzle-orm/mysql-core";
 
 // User table
 export const user = mysqlTable("user", {
@@ -26,10 +26,10 @@ export const session = mysqlTable(
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
   },
-  (table) => ({
-    userIdIdx: index("idx_session_userId").on(table.userId),
-    tokenIdx: index("idx_session_token").on(table.token),
-  })
+  (table) => [
+    index("idx_session_userId").on(table.userId),
+    index("idx_session_token").on(table.token),
+  ]
 );
 
 // Account table
@@ -50,10 +50,10 @@ export const account = mysqlTable(
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
   },
-  (table) => ({
-    userIdIdx: index("idx_account_userId").on(table.userId),
-    providerIdIdx: index("idx_account_providerId").on(table.providerId),
-  })
+  (table) => [
+    index("idx_account_userId").on(table.userId),
+    index("idx_account_providerId").on(table.providerId),
+  ]
 );
 
 // Verification table
@@ -67,7 +67,30 @@ export const verification = mysqlTable(
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
   },
-  (table) => ({
-    identifierIdx: index("idx_verification_identifier").on(table.identifier),
-  })
+  (table) => [
+    index("idx_verification_identifier").on(table.identifier),
+  ]
+);
+
+// Passkey table
+export const passkey = mysqlTable(
+  "passkey",
+  {
+    id: varchar("id", { length: 255 }).primaryKey(),
+    name: varchar("name", { length: 255 }),
+    publicKey: text("publicKey").notNull(),
+    userId: varchar("userId", { length: 255 })
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    credentialID: text("credentialID").notNull(),
+    counter: int("counter").notNull(),
+    deviceType: varchar("deviceType", { length: 255 }).notNull(),
+    backedUp: boolean("backedUp").notNull(),
+    transports: varchar("transports", { length: 255 }),
+    aaguid: varchar("aaguid", { length: 255 }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_passkey_userId").on(table.userId),
+  ]
 );

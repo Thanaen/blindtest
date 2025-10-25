@@ -69,7 +69,7 @@ components/               # React components
 drizzle/                  # Drizzle migrations (auto-generated)
 drizzle.config.ts         # Drizzle Kit configuration
 schema.sql                # MySQL database schema (initial setup)
-.env.local                # Local environment variables (git-ignored)
+.env                # Local environment variables (git-ignored)
 .env.example              # Environment variables template
 ```
 
@@ -158,21 +158,19 @@ A local MySQL server is required for development. The application will not work 
    - **Linux**: `sudo apt install mysql-server` or `sudo systemctl start mysql`
    - **Windows**: Download from [MySQL website](https://dev.mysql.com/downloads/)
 
-2. **Configure environment variables** in `.env.local`:
+2. **Configure environment variables** in `.env`:
    ```env
-   DATABASE_HOST=localhost
-   DATABASE_USER=root
-   DATABASE_PASSWORD=your_password
-   DATABASE_NAME=blindtest
+   # Format: mysql://<user>:<password>@<host>:<port>/<database>
+   DATABASE_URL=mysql://root:your_password@localhost:3306/blindtest
    BETTER_AUTH_SECRET=generate-a-secure-random-string
    BETTER_AUTH_URL=http://localhost:3000
    NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
    ```
 
-3. **Create the database and tables**:
+3. **Create the database and apply migrations**:
    ```bash
    mysql -u root -p -e "CREATE DATABASE blindtest;"
-   mysql -u root -p blindtest < schema.sql
+   bun run db:migrate
    ```
 
 ### Authentication Configuration
@@ -190,11 +188,25 @@ import { useSession, authClient } from "@/lib/auth-client";
 // Check session
 const { data: session, isPending } = useSession();
 
-// Sign up
+// Sign up with email/password
 await authClient.signUp.email({ email, password, name });
 
-// Sign in
+// Sign in with email/password
 await authClient.signIn.email({ email, password });
+
+// Sign in with passkey
+await authClient.signIn.passkey({
+  fetchOptions: {
+    onSuccess() {
+      // Handle successful authentication
+    },
+  },
+});
+
+// Add passkey (for authenticated users)
+await authClient.passkey.addPasskey({
+  name: "My Passkey", // Optional name
+});
 
 // Sign out
 await authClient.signOut();
@@ -202,11 +214,12 @@ await authClient.signOut();
 
 ### Database Schema
 
-The following tables are created by `schema.sql`:
+The following tables are defined in `lib/db/schema.ts`:
 - **user**: User accounts (id, name, email, emailVerified, image, timestamps)
 - **session**: User sessions (id, userId, expiresAt, token, ipAddress, userAgent)
 - **account**: OAuth accounts and password storage (id, accountId, providerId, userId, accessToken, refreshToken, password)
 - **verification**: Email verification tokens (id, identifier, value, expiresAt)
+- **passkey**: WebAuthn passkey credentials (id, name, publicKey, userId, credentialID, counter, deviceType, backedUp, transports, aaguid, createdAt)
 
 For complete setup instructions, see `AUTH_SETUP.md`.
 
@@ -280,25 +293,30 @@ const newUser: NewUser = {
 
 ```bash
 # Generate migrations from schema
-bunx drizzle-kit generate
+bun run db:generate
 
-# Push schema changes to database (development)
-bunx drizzle-kit push
+# Apply migrations to database
+bun run db:migrate
 
 # Open Drizzle Studio (database GUI)
-bunx drizzle-kit studio
+bun run db:studio
 
-# Run migrations
-bunx drizzle-kit migrate
+# Development only: Push schema without migrations
+bunx drizzle-kit push
 ```
+
+For detailed migration workflow, see `DATABASE_MIGRATIONS.md`.
 
 ### Schema Management
 
 The database schema is defined in `lib/db/schema.ts` using Drizzle's schema builder. When you modify the schema:
 
 1. Update `lib/db/schema.ts` with your changes
-2. Run `bunx drizzle-kit push` to apply changes directly (development), OR
-3. Run `bunx drizzle-kit generate` to create a migration file, then apply it
+2. Run `bun run db:generate` to create a migration file
+3. Review the generated SQL in `drizzle/XXXX_name.sql`
+4. Run `bun run db:migrate` to apply the migration
+
+**For development only**: Use `bunx drizzle-kit push` to apply changes directly without creating migration files.
 
 ### Integration with Better Auth
 

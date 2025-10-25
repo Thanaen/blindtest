@@ -8,7 +8,7 @@ This guide will help you complete the authentication setup for your Next.js appl
    - `better-auth` - Authentication library
    - `mysql2` - MySQL database driver
 
-2. **Environment Variables** (`.env.local`)
+2. **Environment Variables** (`.env`)
    - Database connection settings
    - Better Auth configuration
 
@@ -37,13 +37,11 @@ This guide will help you complete the authentication setup for your Next.js appl
 
 ### Step 1: Update Environment Variables
 
-Edit `.env.local` and update the database credentials:
+Edit `.env` and update the database connection string:
 
 ```env
-DATABASE_HOST=localhost
-DATABASE_USER=root
-DATABASE_PASSWORD=your_mysql_password
-DATABASE_NAME=blindtest
+# Format: mysql://<user>:<password>@<host>:<port>/<database>
+DATABASE_URL=mysql://root:your_mysql_password@localhost:3306/blindtest
 
 BETTER_AUTH_SECRET=your-secret-key-change-this-in-production
 BETTER_AUTH_URL=http://localhost:3000
@@ -195,7 +193,7 @@ If you get database connection errors:
    brew services list         # macOS
    ```
 
-2. Check credentials in `.env.local`
+2. Check credentials in `.env`
 
 3. Ensure the database exists:
    ```bash
@@ -212,7 +210,7 @@ mysql -u root -p blindtest < schema.sql
 
 ### Environment Variables Not Loading
 
-Restart the development server after changing `.env.local`:
+Restart the development server after changing `.env`:
 
 ```bash
 # Stop the server (Ctrl+C)

@@ -3,12 +3,9 @@ import mysql from "mysql2/promise";
 import * as schema from "./schema";
 
 // Create MySQL connection pool
-const connection = mysql.createPool({
-  host: process.env.DATABASE_HOST || "localhost",
-  user: process.env.DATABASE_USER || "root",
-  password: process.env.DATABASE_PASSWORD || "",
-  database: process.env.DATABASE_NAME || "blindtest",
-});
+const connection = mysql.createPool(
+  process.env.DATABASE_URL!
+);
 
 // Create Drizzle instance
 export const db = drizzle(connection, { schema, mode: "default" });

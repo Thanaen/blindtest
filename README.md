@@ -71,10 +71,10 @@ npm install
 Copy the example environment file and update it with your configuration:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Edit `.env.local` with your MySQL credentials:
+Edit `.env` with your MySQL credentials:
 
 ```env
 # Database Configuration
@@ -161,9 +161,8 @@ blindtest/
 │       └── schema.ts        # Database schema (Drizzle)
 ├── drizzle/                 # Drizzle migrations (auto-generated)
 ├── drizzle.config.ts        # Drizzle Kit configuration
-├── schema.sql               # Database schema (initial setup)
 ├── .env.example             # Environment variables template
-├── .env.local               # Local environment variables (git-ignored)
+├── .env               # Local environment variables (git-ignored)
 └── README.md                # This file
 ```
 
@@ -352,7 +351,7 @@ All tables are defined in `lib/db/schema.ts` with TypeScript types and relations
    sudo systemctl status mysql
    ```
 
-2. Check your credentials in `.env.local`
+2. Check your credentials in `.env`
 
 3. Test the connection:
    ```bash
@@ -377,7 +376,7 @@ PORT=3001 bun run dev
 
 ### Environment Variables Not Loading
 
-**Solution**: Restart the development server after modifying `.env.local`:
+**Solution**: Restart the development server after modifying `.env`:
 ```bash
 # Stop the server (Ctrl+C)
 bun run dev
