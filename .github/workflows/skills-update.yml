@@ -1,0 +1,25 @@
+name: Skills update
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bunx skills@latest update --project --yes
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/skills-update
+          delete-branch: true
+          commit-message: "chore(skills): update agent skills"
+          title: "chore(skills): update agent skills"
+          body: Weekly `skills update` run. Review the diff of each `SKILL.md` before merging.
